@@ -29,6 +29,3 @@ MCP FeatureSet package for the Neos **Content Repository**. Provides tools for i
 | `content_add_content` | Creates a new content node inside a ContentCollection |
 | `content_move_content` | Moves a content node to a different position |
 | `content_remove_content` | Removes a content node |
-
----
-# SJS.Neos.MCP.FeatureSet.CR
