@@ -1,0 +1,10 @@
+SJS:
+  Neos:
+    MCP:
+      server:
+        # configuration for the default server
+        mcp:
+          featureSets:
+            nodeType: \SJS\Neos\MCP\FeatureSet\CR\NodeTypeFeatureSet
+            content: \SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet
+            document: \SJS\Neos\MCP\FeatureSet\CR\DocumentFeatureSet
