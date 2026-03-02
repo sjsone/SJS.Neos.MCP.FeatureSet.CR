@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace SJS\Neos\MCP\FeatureSet\CR\NodeTypeFeatureSet;
 
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\NodeType\NodeType;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\ActionRequest;
@@ -13,12 +16,12 @@ use SJS\Neos\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Neos\MCP\Domain\MCP\Tool\Content;
 use SJS\Neos\MCP\JsonSchema\ObjectSchema;
 use SJS\Neos\MCP\JsonSchema\StringSchema;
+use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
 
 class GetNodeTypeTool extends Tool
 {
-    #[Flow\Inject]
-    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+    use Trait\ContentRepositoryTool;
 
     public function __construct()
     {
@@ -37,14 +40,29 @@ class GetNodeTypeTool extends Tool
 
     public function run(ActionRequest $actionRequest, array $input): Content
     {
-        $httpRequest = $actionRequest->getHttpRequest();
-        $contentRepositoryId = SiteDetectionResult::fromRequest($httpRequest)->contentRepositoryId;
-        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        $contentRepository = $this->getContentRepository($actionRequest);
 
-        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($input['name']);
+        $nodeTypeName = $this->retrieveNodeTypeName($input);
+        $nodeType = $this->getNodeType($contentRepository, $nodeTypeName);
 
         $fullConfig = $nodeType->getFullConfiguration();
 
         return Content::structured($fullConfig)->addText(json_encode($fullConfig));
+    }
+
+    public function retrieveNodeTypeName(array $input): NodeTypeName
+    {
+        $nodeTypeNameAsString = $input['name'] ?? null;
+        $nodeTypeName = NodeTypeName::fromString($nodeTypeNameAsString);
+        return $nodeTypeName;
+    }
+
+    public function getNodeType(ContentRepository $contentRepository, NodeTypeName $nodeTypeName): NodeType
+    {
+        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($nodeTypeName);
+        if ($nodeType === null) {
+            throw new \InvalidArgumentException("Could not find NodeType '{$nodeTypeName}'");
+        }
+        return $nodeType;
     }
 }
