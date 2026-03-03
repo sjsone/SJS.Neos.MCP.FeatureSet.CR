@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet;
 
-use SJS\Neos\MCP\Domain\MCP\Tool\Annotations;
+use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Neos\MCP\FeatureSet\CR\Tool\AbstractAddNodeTool;
 
 class AddContentTool extends AbstractAddNodeTool

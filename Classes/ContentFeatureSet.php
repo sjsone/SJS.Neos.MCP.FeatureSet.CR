@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace SJS\Neos\MCP\FeatureSet\CR;
 
 use Neos\Flow\Annotations as Flow;
-use SJS\Neos\MCP\Domain\MCP\Tool\Content;
-use SJS\Neos\MCP\FeatureSet\AbstractFeatureSet;
+use SJS\Flow\MCP\Domain\MCP\Tool\Content;
+use SJS\Flow\MCP\FeatureSet\AbstractFeatureSet;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\AddContentTool;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\ContentTreeTool;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\MoveContentTool;
