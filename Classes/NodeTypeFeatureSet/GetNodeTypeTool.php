@@ -7,16 +7,14 @@ namespace SJS\Neos\MCP\FeatureSet\CR\NodeTypeFeatureSet;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\NodeType\NodeType;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
-use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
-use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\ActionRequest;
-use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
+use Neos\Flow\Annotations as Flow;
 
 
 class GetNodeTypeTool extends Tool
@@ -38,6 +36,9 @@ class GetNodeTypeTool extends Tool
         );
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     public function run(ActionRequest $actionRequest, array $input): Content
     {
         $contentRepository = $this->getContentRepository($actionRequest);
@@ -47,9 +48,12 @@ class GetNodeTypeTool extends Tool
 
         $fullConfig = $nodeType->getFullConfiguration();
 
-        return Content::structured($fullConfig)->addText(json_encode($fullConfig));
+        return Content::structuredWithFallback($fullConfig);
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     public function retrieveNodeTypeName(array $input): NodeTypeName
     {
         $nodeTypeNameAsString = $input['name'] ?? null;

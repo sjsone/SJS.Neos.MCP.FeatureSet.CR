@@ -32,6 +32,9 @@ class ListNodeTypesTool extends Tool
         );
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     public function run(ActionRequest $actionRequest, array $input): Content
     {
         $httpRequest = $actionRequest->getHttpRequest();
@@ -51,6 +54,6 @@ class ListNodeTypesTool extends Tool
             ];
         }
 
-        return Content::structured($nodeTypes)->addText(json_encode($nodeTypes));
+        return Content::structuredWithFallback($nodeTypes);
     }
 }

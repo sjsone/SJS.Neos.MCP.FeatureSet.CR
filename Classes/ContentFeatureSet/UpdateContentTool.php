@@ -62,6 +62,9 @@ class UpdateContentTool extends Tool
         );
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     public function run(ActionRequest $actionRequest, array $input): Content
     {
         $propertyName = $this->retrievePropertyName($input);
@@ -92,17 +95,31 @@ class UpdateContentTool extends Tool
         return Content::text("Property updated");
     }
 
-    protected function retrievePropertyName(array $input): ?string
+    /**
+     * @param array<string,mixed> $input
+     */
+    protected function retrievePropertyName(array $input): string
     {
-        return $input["property_name"] ?? null;
+        $propertyName = $input["property_name"];
+        if (!\is_string($propertyName)) {
+            throw new \InvalidArgumentException("property_name must be string");
+        }
+        return $propertyName;
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     protected function retrievePropertyValue(array $input): mixed
     {
-        return $input["property_value"] ?? null;
+        $propertyValue = $input["property_value"];
+        if (!\is_string($propertyValue)) {
+            throw new \InvalidArgumentException("property_value must be string");
+        }
+        return $propertyValue;
     }
 
-    protected function validateNode(?Node $node, ContentRepository $contentRepository, string $propertyName)
+    protected function validateNode(?Node $node, ContentRepository $contentRepository, string $propertyName): void
     {
         if ($node === null) {
             throw new \InvalidArgumentException('Could not find node.');
@@ -120,7 +137,7 @@ class UpdateContentTool extends Tool
         return $nodeType;
     }
 
-    protected function validateNodeType(NodeType $nodeType, string $propertyName)
+    protected function validateNodeType(NodeType $nodeType, string $propertyName): void
     {
         if (!$nodeType->hasProperty($propertyName)) {
             throw new \InvalidArgumentException("Node of type {$nodeType->name} does not have property with name: '$propertyName'");
@@ -141,7 +158,22 @@ class UpdateContentTool extends Tool
                 throw new \InvalidArgumentException("The property $propertyName is expected to be of type an '$propertyType' entity. So the value is expected to be an object of {__flow_object_type:\"\", __identifier:\"\"}");
             }
 
-            $propertyValue = $this->persistenceManager->getObjectByIdentifier($propertyValue["__identifier"], $propertyValue["__flow_object_type"]);
+            $identifier = $propertyValue["__identifier"];
+            if (!\is_string($identifier)) {
+                throw new \InvalidArgumentException("__identifier must be a string");
+            }
+
+            $flowObjectType = $propertyValue["__flow_object_type"];
+            if (!\is_string($flowObjectType)) {
+                throw new \InvalidArgumentException("__flow_object_type must be a string");
+            }
+
+            if (!class_exists($flowObjectType) && !interface_exists($flowObjectType)) {
+                throw new \InvalidArgumentException("__flow_object_type must be an existing FQCN");
+
+            }
+
+            $propertyValue = $this->persistenceManager->getObjectByIdentifier($identifier, $flowObjectType);
         }
 
         return $propertyValue;

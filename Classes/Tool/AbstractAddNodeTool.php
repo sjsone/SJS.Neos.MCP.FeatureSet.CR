@@ -46,6 +46,9 @@ abstract class AbstractAddNodeTool extends Tool
         ]);
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     public function run(ActionRequest $actionRequest, array $input): Content
     {
         $nodeAddress = $this->retrieveNodeAddress($input);
@@ -72,12 +75,18 @@ abstract class AbstractAddNodeTool extends Tool
         return Content::text("Created Node with nodeAggregateId: {$newNodeAggregateId}");
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     protected function retrieveParentNodeAggregateId(array $input): NodeAggregateId
     {
         $parentNodeAggregateIdString = $input["parent_node_aggregate_id"] ?? "";
         return NodeAggregateId::fromString($parentNodeAggregateIdString);
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     protected function retrieveProperties(array $input): ?PropertyValuesToWrite
     {
         $propertiesArray = $input["node_properties"] ?? null;
@@ -100,7 +109,7 @@ abstract class AbstractAddNodeTool extends Tool
         );
     }
 
-    protected function validateNodeType(ContentRepository $contentRepository, NodeTypeName $nodeTypeName)
+    protected function validateNodeType(ContentRepository $contentRepository, NodeTypeName $nodeTypeName): void
     {
         $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($nodeTypeName);
         if ($nodeType === null) {

@@ -20,6 +20,9 @@ class DocumentFeatureSet extends AbstractFeatureSet
         $this->addTool(AddDocumentTool::class);
     }
 
+    /**
+     * @param array<string,mixed> $arguments
+     */
     public function toolsCall(string $toolName, array $arguments): Content
     {
         try {

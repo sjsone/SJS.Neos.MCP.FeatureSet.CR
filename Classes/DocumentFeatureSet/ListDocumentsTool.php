@@ -46,6 +46,11 @@ class ListDocumentsTool extends Tool
             )
         );
     }
+
+    /**
+     * @param array<string,mixed> $input
+     * @return Tool\Content
+     */
     public function run(ActionRequest $actionRequest, array $input)
     {
 
@@ -92,6 +97,6 @@ class ListDocumentsTool extends Tool
             }
         }
 
-        return Content::structured($resources)->addText(json_encode(array_values($resources)));
+        return Content::structuredWithFallback($resources);
     }
 }

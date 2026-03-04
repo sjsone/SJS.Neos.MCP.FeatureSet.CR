@@ -11,6 +11,7 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\NodeType\NodeType
 use Neos\ContentRepository\Core\Projection\ContentGraph\Subtree;
 use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Neos\Domain\Service\WorkspaceService;
@@ -23,6 +24,7 @@ use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use Neos\Flow\Annotations as Flow;
+use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\ContentTreeTool\ContentTreeNode;
 
 class ContentTreeTool extends Tool
 {
@@ -69,6 +71,9 @@ class ContentTreeTool extends Tool
         );
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     public function run(ActionRequest $actionRequest, array $input): Content
     {
         $nodeAddressArray = $input["node_address"];
@@ -83,6 +88,10 @@ class ContentTreeTool extends Tool
         $contentRepository = $this->contentRepositoryRegistry->get(contentRepositoryId: $contentRepositoryId);
 
         $user = $this->userService->getBackendUser();
+        if ($user === null) {
+            throw new \InvalidArgumentException("Could not get backend user");
+        }
+
         $userWorkspace = $this->workspaceService->getPersonalWorkspaceForUser(contentRepositoryId: $contentRepositoryId, userId: $user->getId());
 
         $graph = $contentRepository->getContentGraph(workspaceName: $userWorkspace->workspaceName);
@@ -97,13 +106,20 @@ class ContentTreeTool extends Tool
         ));
 
         $subtree = $subGraph->findSubtree(entryNodeAggregateId: $nodeAddress->aggregateId, filter: $subtreeFilter);
+        if ($subtree === null) {
+            throw new \InvalidArgumentException("Could not find subtree using aggregateId in nodeAddress");
+        }
+
         $subtreeForJson = $this->subtreeToJson($subtree, $nodeTypeFilter);
 
 
-        return Content::structured($subtreeForJson)->addText(json_encode($subtreeForJson));
+        return Content::structuredWithFallback($subtreeForJson->toArray());
     }
 
-    public function subtreeToJson(Subtree $subtree, ?array $nodeTypeFilter): array
+    /**
+     * @param array<string> $nodeTypeFilter
+     */
+    public function subtreeToJson(Subtree $subtree, ?array $nodeTypeFilter): ContentTreeNode
     {
         $children = [];
 
@@ -111,16 +127,16 @@ class ContentTreeTool extends Tool
             $children[(string) $childSubtree->node->name] = $this->subtreeToJson($childSubtree, $nodeTypeFilter);
         }
 
-        return [
-            "workspaceName" => $subtree->node->workspaceName,
-            "node_address" => NodeAddress::fromNode($subtree->node),
-            "name" => $subtree->node->name,
-            "aggregateId" => $subtree->node->aggregateId,
-            "nodeTypeName" => $subtree->node->nodeTypeName,
-            "timestamps" => $subtree->node->timestamps,
-            "properties" => iterator_to_array($subtree->node->properties->getIterator()),
-            "children" => $children,
-        ];
+        return new ContentTreeNode(
+            $subtree->node->workspaceName,
+            NodeAddress::fromNode($subtree->node),
+            $subtree->node->name ?? NodeName::fromString(""),
+            $subtree->node->aggregateId,
+            $subtree->node->nodeTypeName,
+            $subtree->node->timestamps,
+            iterator_to_array($subtree->node->properties->getIterator()),
+            $children,
+        );
 
     }
 }

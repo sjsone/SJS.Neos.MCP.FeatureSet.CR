@@ -26,6 +26,9 @@ class ContentFeatureSet extends AbstractFeatureSet
         $this->addTool(RemoveContentTool::class);
     }
 
+    /**
+     * @param array<string,mixed> $arguments
+     */
     public function toolsCall(string $toolName, array $arguments): Content
     {
         try {

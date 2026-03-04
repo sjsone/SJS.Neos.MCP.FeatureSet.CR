@@ -24,7 +24,7 @@ trait ContentRepositoryTool
     #[Flow\Inject]
     protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
-    protected function getContentRepository(ActionRequest $actionRequest): ?ContentRepository
+    protected function getContentRepository(ActionRequest $actionRequest): ContentRepository
     {
         $httpRequest = $actionRequest->getHttpRequest();
         $contentRepositoryId = SiteDetectionResult::fromRequest(request: $httpRequest)->contentRepositoryId;
@@ -33,32 +33,42 @@ trait ContentRepositoryTool
         return $contentRepository;
     }
 
-    protected function getNode(ContentRepository $contentRepository, WorkspaceName $workspaceName, NodeAddress $nodeAddress): ?Node
+    protected function getNode(ContentRepository $contentRepository, WorkspaceName $workspaceName, NodeAddress $nodeAddress): Node
     {
         $graph = $contentRepository->getContentGraph(workspaceName: $workspaceName);
         $subGraph = $graph->getSubgraph(dimensionSpacePoint: $nodeAddress->dimensionSpacePoint, visibilityConstraints: VisibilityConstraints::default());
         $node = $subGraph->findNodeById(nodeAggregateId: $nodeAddress->aggregateId);
+        if ($node === null) {
+            throw new \InvalidArgumentException("Could not get Node with 'workspaceName' and 'nodeAddress'");
+        }
 
         return $node;
     }
 
-    protected function validateNodeAddress(NodeAddress $nodeAddress)
+    protected function validateNodeAddress(NodeAddress $nodeAddress): void
     {
         $this->validateWorkspaceName(workspaceName: $nodeAddress->workspaceName);
     }
 
-    protected function validateWorkspaceName(WorkspaceName $workspaceName)
+    protected function validateWorkspaceName(WorkspaceName $workspaceName): void
     {
         if ($workspaceName->equals(WorkspaceName::forLive())) {
             throw new \InvalidArgumentException('Updating nodes on Live workspace is currently disabled.');
         }
     }
+
+    /**
+     * @param array<string,mixed> $input
+     */
     protected function retrieveNodeAddress(array $input): NodeAddress
     {
         $nodeAddressArray = $input["node_address"] ?? [];
         return NodeAddress::fromArray($nodeAddressArray);
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     protected function retrieveNodeTypeName(array $input): NodeTypeName
     {
         $nodeTypeNameString = $input["node_type_name"] ?? "";

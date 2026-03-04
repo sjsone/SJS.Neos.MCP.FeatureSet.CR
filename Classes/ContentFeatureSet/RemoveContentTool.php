@@ -25,6 +25,9 @@ class RemoveContentTool extends Tool
         );
     }
 
+    /**
+     * @param array<string,mixed> $input
+     */
     public function run(ActionRequest $actionRequest, array $input): Content
     {
         // TODO: implement
