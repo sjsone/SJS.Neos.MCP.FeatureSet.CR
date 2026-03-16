@@ -51,7 +51,7 @@ class ListDocumentsTool extends Tool
      * @param array<string,mixed> $input
      * @return Tool\Content
      */
-    public function run(ActionRequest $actionRequest, array $input)
+    public function run(ActionRequest $actionRequest, array $input): Content
     {
 
         $contentRepository = $this->getContentRepository($actionRequest);
