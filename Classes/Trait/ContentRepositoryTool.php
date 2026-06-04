@@ -11,10 +11,10 @@ use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
-use Neos\Flow\Mvc\ActionRequest;
 use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
+use SJS\Flow\MCP\Domain\Identity\ServerContext;
 
 trait ContentRepositoryTool
 {
@@ -24,9 +24,9 @@ trait ContentRepositoryTool
     #[Flow\Inject]
     protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
-    protected function getContentRepository(ActionRequest $actionRequest): ContentRepository
+    protected function getContentRepository(ServerContext $serverContext): ContentRepository
     {
-        $httpRequest = $actionRequest->getHttpRequest();
+        $httpRequest = $serverContext->request->getHttpRequest();
         $contentRepositoryId = SiteDetectionResult::fromRequest(request: $httpRequest)->contentRepositoryId;
         $contentRepository = $this->contentRepositoryRegistry->get(contentRepositoryId: $contentRepositoryId);
 

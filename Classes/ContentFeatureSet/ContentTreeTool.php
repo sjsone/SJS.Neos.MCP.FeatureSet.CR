@@ -13,8 +13,8 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
-use Neos\Flow\Mvc\ActionRequest;
 use Neos\Neos\Domain\Service\WorkspaceService;
+use SJS\Flow\MCP\Domain\Identity\ServerContext;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Neos\Neos\Service\UserService;
 use Psr\Log\LoggerInterface;
@@ -74,7 +74,7 @@ class ContentTreeTool extends Tool
     /**
      * @param array<string,mixed> $input
      */
-    public function run(ActionRequest $actionRequest, array $input): Content
+    public function run(ServerContext $serverContext, array $input): Content
     {
         $nodeAddressArray = $input["node_address"];
 
@@ -83,7 +83,7 @@ class ContentTreeTool extends Tool
 
         $nodeAddress = NodeAddress::fromArray($nodeAddressArray);
 
-        $httpRequest = $actionRequest->getHttpRequest();
+        $httpRequest = $serverContext->request->getHttpRequest();
         $contentRepositoryId = SiteDetectionResult::fromRequest(request: $httpRequest)->contentRepositoryId;
         $contentRepository = $this->contentRepositoryRegistry->get(contentRepositoryId: $contentRepositoryId);
 

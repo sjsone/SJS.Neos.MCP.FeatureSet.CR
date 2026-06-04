@@ -7,7 +7,7 @@ namespace SJS\Neos\MCP\FeatureSet\CR\NodeTypeFeatureSet;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\NodeType\NodeType;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
-use Neos\Flow\Mvc\ActionRequest;
+use SJS\Flow\MCP\Domain\Identity\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
@@ -39,9 +39,9 @@ class GetNodeTypeTool extends Tool
     /**
      * @param array<string,mixed> $input
      */
-    public function run(ActionRequest $actionRequest, array $input): Content
+    public function run(ServerContext $serverContext, array $input): Content
     {
-        $contentRepository = $this->getContentRepository($actionRequest);
+        $contentRepository = $this->getContentRepository($serverContext);
 
         $nodeTypeName = $this->retrieveNodeTypeName($input);
         $nodeType = $this->getNodeType($contentRepository, $nodeTypeName);

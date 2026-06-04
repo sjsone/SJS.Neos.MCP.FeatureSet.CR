@@ -12,8 +12,8 @@ use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWri
 use Neos\ContentRepository\Core\NodeType\NodeType;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
-use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
+use SJS\Flow\MCP\Domain\Identity\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
@@ -65,7 +65,7 @@ class UpdateContentTool extends Tool
     /**
      * @param array<string,mixed> $input
      */
-    public function run(ActionRequest $actionRequest, array $input): Content
+    public function run(ServerContext $serverContext, array $input): Content
     {
         $propertyName = $this->retrievePropertyName($input);
         $propertyValue = $this->retrievePropertyValue($input);
@@ -74,7 +74,7 @@ class UpdateContentTool extends Tool
         $this->validateNodeAddress($nodeAddress);
         $workspaceName = $nodeAddress->workspaceName;
 
-        $contentRepository = $this->getContentRepository($actionRequest);
+        $contentRepository = $this->getContentRepository($serverContext);
 
         $node = $this->getNode($contentRepository, $workspaceName, $nodeAddress);
         $this->validateNode($node, $contentRepository, $propertyName);

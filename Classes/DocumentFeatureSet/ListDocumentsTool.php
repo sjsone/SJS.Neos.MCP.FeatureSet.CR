@@ -9,11 +9,11 @@ use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Mvc\ActionRequest;
 use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Psr\Log\LoggerInterface;
+use SJS\Flow\MCP\Domain\Identity\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
@@ -51,14 +51,14 @@ class ListDocumentsTool extends Tool
      * @param array<string,mixed> $input
      * @return Tool\Content
      */
-    public function run(ActionRequest $actionRequest, array $input): Content
+    public function run(ServerContext $serverContext, array $input): Content
     {
 
-        $contentRepository = $this->getContentRepository($actionRequest);
+        $contentRepository = $this->getContentRepository($serverContext);
 
         $graph = $contentRepository->getContentGraph(WorkspaceName::forLive());
 
-        $nodeUriBuilder = $this->nodeUriBuilderFactory->forActionRequest($actionRequest);
+        $nodeUriBuilder = $this->nodeUriBuilderFactory->forActionRequest($serverContext->request);
 
         $nodeTypeManager = $contentRepository->getNodeTypeManager();
 

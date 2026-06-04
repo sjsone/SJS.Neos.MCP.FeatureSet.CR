@@ -12,7 +12,7 @@ use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\References;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
-use Neos\Flow\Mvc\ActionRequest;
+use SJS\Flow\MCP\Domain\Identity\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
@@ -49,7 +49,7 @@ abstract class AbstractAddNodeTool extends Tool
     /**
      * @param array<string,mixed> $input
      */
-    public function run(ActionRequest $actionRequest, array $input): Content
+    public function run(ServerContext $serverContext, array $input): Content
     {
         $nodeAddress = $this->retrieveNodeAddress($input);
         $nodeTypeName = $this->retrieveNodeTypeName($input);
@@ -58,7 +58,7 @@ abstract class AbstractAddNodeTool extends Tool
 
         $this->validateNodeAddress($nodeAddress);
 
-        $contentRepository = $this->getContentRepository($actionRequest);
+        $contentRepository = $this->getContentRepository($serverContext);
 
         $this->validateNodeType($contentRepository, $nodeTypeName);
 
