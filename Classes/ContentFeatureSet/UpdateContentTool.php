@@ -13,7 +13,7 @@ use Neos\ContentRepository\Core\NodeType\NodeType;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
-use SJS\Flow\MCP\Domain\Identity\ServerContext;
+use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
@@ -151,6 +151,11 @@ class UpdateContentTool extends Tool
         if ($propertyType === "string" && \is_string($propertyValue)) {
             $propertyValue = str_replace("\\\"", "\"", $propertyValue);
             $propertyValue = str_replace("<\/p>", "</p>", $propertyValue);
+        }
+
+        // Handle DateTime / DateTimeImmutable properties: accept ISO 8601 strings
+        if (is_a($propertyType, \DateTimeInterface::class, true) && \is_string($propertyValue)) {
+            return new \DateTimeImmutable($propertyValue);
         }
 
         if (class_exists($propertyType) || interface_exists($propertyType)) {
