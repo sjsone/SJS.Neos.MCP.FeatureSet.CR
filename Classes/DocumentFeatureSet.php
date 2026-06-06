@@ -9,6 +9,7 @@ use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\FeatureSet\AbstractFeatureSet;
 use SJS\Neos\MCP\FeatureSet\CR\DocumentFeatureSet\AddDocumentTool;
 use SJS\Neos\MCP\FeatureSet\CR\DocumentFeatureSet\ListDocumentsTool;
+use SJS\Neos\MCP\FeatureSet\CR\DocumentFeatureSet\ResolveNodePathTool;
 
 #[Flow\Scope("singleton")]
 class DocumentFeatureSet extends AbstractFeatureSet
@@ -17,6 +18,7 @@ class DocumentFeatureSet extends AbstractFeatureSet
     {
         $this->addTool(ListDocumentsTool::class);
         $this->addTool(AddDocumentTool::class);
+        $this->addTool(ResolveNodePathTool::class);
     }
 
     /**

@@ -9,6 +9,9 @@ use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\FeatureSet\AbstractFeatureSet;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\AddContentTool;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\ContentTreeTool;
+use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\CopyNodeTool;
+use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\FindNodesTool;
+use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\GetNodeAggregateInfoTool;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\MoveContentTool;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\RemoveContentTool;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\UpdateContentTool;
@@ -23,6 +26,9 @@ class ContentFeatureSet extends AbstractFeatureSet
         $this->addTool(AddContentTool::class);
         $this->addTool(MoveContentTool::class);
         $this->addTool(RemoveContentTool::class);
+        $this->addTool(FindNodesTool::class);
+        $this->addTool(CopyNodeTool::class);
+        $this->addTool(GetNodeAggregateInfoTool::class);
     }
 
     /**

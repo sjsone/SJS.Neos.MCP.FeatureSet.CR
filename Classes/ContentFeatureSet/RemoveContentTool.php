@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet;
 
-use SJS\Flow\MCP\Domain\Identity\ServerContext;
+use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;

@@ -14,7 +14,7 @@ use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
-use SJS\Flow\MCP\Domain\Identity\ServerContext;
+use SJS\Flow\MCP\Domain\Connection\ServerContext;
 
 trait ContentRepositoryTool
 {
