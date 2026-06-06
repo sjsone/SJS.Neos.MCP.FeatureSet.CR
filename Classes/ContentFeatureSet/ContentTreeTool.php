@@ -124,13 +124,22 @@ class ContentTreeTool extends Tool
         $children = [];
 
         foreach ($subtree->children as $childSubtree) {
-            $children[(string) $childSubtree->node->name] = $this->subtreeToJson($childSubtree, $nodeTypeFilter);
+            $childName = $childSubtree->node->name !== null
+                ? (string) $childSubtree->node->name
+                : '_unnamed_' . (string) $childSubtree->node->aggregateId;
+            $children[$childName] = $this->subtreeToJson($childSubtree, $nodeTypeFilter);
+        }
+
+        $nodeName = $subtree->node->name;
+        if ($nodeName === null) {
+            $aggregateIdStr = (string) $subtree->node->aggregateId;
+            $nodeName = NodeName::fromString('unnamed-' . substr($aggregateIdStr, 0, 8));
         }
 
         return new ContentTreeNode(
             $subtree->node->workspaceName,
             NodeAddress::fromNode($subtree->node),
-            $subtree->node->name ?? NodeName::fromString(""),
+            $nodeName,
             $subtree->node->aggregateId,
             $subtree->node->nodeTypeName,
             $subtree->node->timestamps,
