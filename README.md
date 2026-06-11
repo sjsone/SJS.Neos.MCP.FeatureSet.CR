@@ -19,6 +19,7 @@ MCP FeatureSet package for the Neos **Content Repository**. Provides tools for i
 | --- | --- |
 | `document_list_documents` | Lists all documents of the site; filterable by node type |
 | `document_add_document` | Creates a new document node at a given position |
+| `document_resolve_node_path` | Resolves a human-readable URL path to a document node |
 
 ### `ContentFeatureSet` — prefix `content`
 
@@ -29,3 +30,6 @@ MCP FeatureSet package for the Neos **Content Repository**. Provides tools for i
 | `content_add_content` | Creates a new content node inside a ContentCollection |
 | `content_move_content` | Moves a content node to a different position |
 | `content_remove_content` | Removes a content node |
+| `content_find_nodes` | Searches nodes by type, property values, or full-text |
+| `content_copy_node` | Copies a node (and optionally its children) to a new parent |
+| `content_get_node_aggregate_info` | Comprehensive node aggregate info across all dimensions |
