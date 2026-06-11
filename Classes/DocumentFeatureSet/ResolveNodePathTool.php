@@ -15,22 +15,24 @@ use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
 use SJS\Flow\MCP\Domain\Connection\ServerContext;
-use Psr\Log\LoggerInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
+use Psr\Log\LoggerInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
-class ResolveNodePathTool extends Tool
+class ResolveNodePathTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 
     #[Flow\Inject]
     protected LoggerInterface $logger;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'resolve_node_path',
@@ -46,7 +48,8 @@ class ResolveNodePathTool extends Tool
             annotations: new Annotations(
                 title: 'Resolve Node Path',
                 readOnlyHint: true
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
@@ -121,18 +124,18 @@ class ResolveNodePathTool extends Tool
      */
     private function normalizePathSegments(string $path): array
     {
-        $path = ltrim($path, '/');
+        $path = \ltrim($path, '/');
 
-        if (str_ends_with($path, '.html')) {
-            $path = substr($path, 0, -5);
+        if (\str_ends_with($path, '.html')) {
+            $path = \substr($path, 0, -5);
         }
 
-        $segments = array_filter(
-            explode('/', $path),
+        $segments = \array_filter(
+            \explode('/', $path),
             fn(string $s): bool => $s !== ''
         );
 
-        return array_values($segments);
+        return \array_values($segments);
     }
 
     /**
@@ -218,19 +221,19 @@ class ResolveNodePathTool extends Tool
         array $segments,
         int $offset
     ): ?array {
-        if ($offset >= count($segments)) {
+        if ($offset >= \count($segments)) {
             return null;
         }
 
         $uriPathSegment = $node->getProperty('uriPathSegment');
 
-        if (!is_string($uriPathSegment) || $uriPathSegment !== $segments[$offset]) {
+        if (!\is_string($uriPathSegment) || $uriPathSegment !== $segments[$offset]) {
             return null;
         }
 
         $newOffset = $offset + 1;
 
-        if ($newOffset >= count($segments)) {
+        if ($newOffset >= \count($segments)) {
             // All segments consumed — exact match at this node
             return [
                 'node' => $node,
@@ -339,7 +342,7 @@ class ResolveNodePathTool extends Tool
             }
 
             $segment = $currentNode->getProperty('uriPathSegment');
-            if (is_string($segment) && $segment !== '') {
+            if (\is_string($segment) && $segment !== '') {
                 array_unshift($segments, $segment);
             }
 
@@ -354,6 +357,6 @@ class ResolveNodePathTool extends Tool
             return '/';
         }
 
-        return '/' . implode('/', $segments);
+        return '/' . \implode('/', $segments);
     }
 }

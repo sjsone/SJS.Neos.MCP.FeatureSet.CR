@@ -9,11 +9,13 @@ use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 
-class MoveContentTool extends Tool
+class MoveContentTool extends Tool implements ToolConstructor
 {
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'move_content',
@@ -21,7 +23,8 @@ class MoveContentTool extends Tool
             inputSchema: new ObjectSchema(),
             annotations: new Annotations(
                 title: 'Move Content'
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 

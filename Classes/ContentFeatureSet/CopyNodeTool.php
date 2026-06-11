@@ -19,6 +19,8 @@ use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
 use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\BooleanSchema;
@@ -26,11 +28,11 @@ use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
-class CopyNodeTool extends Tool
+class CopyNodeTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'copy_node',
@@ -64,7 +66,8 @@ class CopyNodeTool extends Tool
             ]),
             annotations: new Annotations(
                 title: 'Copy Node'
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
@@ -213,7 +216,7 @@ class CopyNodeTool extends Tool
      */
     private function parseRecursive(array $input): bool
     {
-        return (bool)($input['recursive'] ?? true);
+        return (bool) ($input['recursive'] ?? true);
     }
 
     /**

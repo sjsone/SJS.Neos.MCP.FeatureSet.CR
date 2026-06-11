@@ -11,15 +11,17 @@ use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 
 
-class ListNodeTypesTool extends Tool
+class ListNodeTypesTool extends Tool implements ToolConstructor
 {
     #[Flow\Inject]
     protected ContentRepositoryRegistry $contentRepositoryRegistry;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'list_node_types',
@@ -28,7 +30,8 @@ class ListNodeTypesTool extends Tool
             annotations: new Annotations(
                 title: 'List Node Types',
                 readOnlyHint: true
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
@@ -50,7 +53,7 @@ class ListNodeTypesTool extends Tool
                 'abstract' => $nodeType->isAbstract(),
                 'final' => $nodeType->isFinal(),
                 'description' => $nodeType->getConfiguration('description') ?? '',
-                'superTypes' => array_map(fn($st) => (string) $st->name, $nodeType->getDeclaredSuperTypes()),
+                'superTypes' => \array_map(fn($st) => (string) $st->name, $nodeType->getDeclaredSuperTypes()),
             ];
         }
 

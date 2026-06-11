@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet;
 
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Neos\MCP\FeatureSet\CR\Tool\AbstractAddNodeTool;
 
-class AddContentTool extends AbstractAddNodeTool
+class AddContentTool extends AbstractAddNodeTool implements ToolConstructor
 {
     protected string $requiredNodeTypeName = "Neos.Neos:Content";
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'add_content',
@@ -19,7 +21,8 @@ class AddContentTool extends AbstractAddNodeTool
             inputSchema: self::createInputSchema(),
             annotations: new Annotations(
                 title: 'Add Content'
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 

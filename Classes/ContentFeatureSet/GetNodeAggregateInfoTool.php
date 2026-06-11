@@ -17,15 +17,17 @@ use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
-class GetNodeAggregateInfoTool extends Tool
+class GetNodeAggregateInfoTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'get_node_aggregate_info',
@@ -44,7 +46,8 @@ class GetNodeAggregateInfoTool extends Tool
             annotations: new Annotations(
                 title: 'Get Node Aggregate Info',
                 readOnlyHint: true
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
@@ -123,13 +126,13 @@ class GetNodeAggregateInfoTool extends Tool
             // Use serialized property values for reliable JSON output
             $serializedProperties = [];
             foreach ($node->properties->serialized() as $propertyName => $serializedValue) {
-                $serializedProperties[(string)$propertyName] = $serializedValue->value;
+                $serializedProperties[(string) $propertyName] = $serializedValue->value;
             }
 
             // Build property type map from the NodeType configuration
             $propertyTypes = [];
             foreach ($nodeTypeProperties as $propName => $propConfig) {
-                $propertyTypes[(string)$propName] = $propConfig['type'] ?? 'string';
+                $propertyTypes[(string) $propName] = $propConfig['type'] ?? 'string';
             }
 
             // Shadowing relationships via the interdimensional variation graph
@@ -225,7 +228,7 @@ class GetNodeAggregateInfoTool extends Tool
         foreach ($nodeTypeProperties as $propertyName => $propertyConfig) {
             $propertyType = $propertyConfig['type'] ?? 'string';
             // Only consider non-scalar types (class/interface references)
-            if (!class_exists($propertyType) && !interface_exists($propertyType)) {
+            if (!\class_exists($propertyType) && !interface_exists($propertyType)) {
                 continue;
             }
 
@@ -235,16 +238,16 @@ class GetNodeAggregateInfoTool extends Tool
                     continue;
                 }
                 $propertyValue = $node->properties[$propertyName];
-                if (!is_object($propertyValue)) {
+                if (!\is_object($propertyValue)) {
                     continue;
                 }
                 // Check if it looks like an entity reference with an __identifier
                 $identifier = null;
                 if (isset($propertyValue->__identifier)) {
                     $identifier = $propertyValue->__identifier;
-                } elseif (method_exists($propertyValue, 'jsonSerialize')) {
+                } elseif (\method_exists($propertyValue, 'jsonSerialize')) {
                     $serialized = $propertyValue->jsonSerialize();
-                    if (is_array($serialized) && isset($serialized['__identifier'])) {
+                    if (\is_array($serialized) && isset($serialized['__identifier'])) {
                         $identifier = $serialized['__identifier'];
                     }
                 }

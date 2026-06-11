@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace SJS\Neos\MCP\FeatureSet\CR\DocumentFeatureSet;
 
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Neos\MCP\FeatureSet\CR\Tool\AbstractAddNodeTool;
 
-class AddDocumentTool extends AbstractAddNodeTool
+class AddDocumentTool extends AbstractAddNodeTool implements ToolConstructor
 {
     protected string $requiredNodeTypeName = "Neos.Neos:Document";
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'add_document',
@@ -19,7 +21,8 @@ class AddDocumentTool extends AbstractAddNodeTool
             inputSchema: self::createInputSchema(),
             annotations: new Annotations(
                 title: 'Add Document',
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 }

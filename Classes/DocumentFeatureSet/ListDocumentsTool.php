@@ -15,13 +15,15 @@ use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Psr\Log\LoggerInterface;
 use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
-class ListDocumentsTool extends Tool
+class ListDocumentsTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 
@@ -31,9 +33,10 @@ class ListDocumentsTool extends Tool
     #[Flow\Inject]
     protected LoggerInterface $logger;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
+            featureSet: $featureSet,
             name: 'list_documents',
             description: 'Lists all documents of the site',
             inputSchema: new ObjectSchema(properties: [

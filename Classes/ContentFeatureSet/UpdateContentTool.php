@@ -15,7 +15,9 @@ use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
 use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 use SJS\Flow\MCP\JsonSchema\AnySchema;
@@ -23,7 +25,7 @@ use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use Neos\Flow\Annotations as Flow;
 
-class UpdateContentTool extends Tool
+class UpdateContentTool extends Tool implements ToolConstructor
 {
 
     use Trait\ContentRepositoryTool;
@@ -31,7 +33,7 @@ class UpdateContentTool extends Tool
     #[Flow\Inject]
     protected PersistenceManagerInterface $persistenceManager;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'update_content',
@@ -58,7 +60,8 @@ class UpdateContentTool extends Tool
             annotations: new Annotations(
                 title: 'Update Content',
                 idempotentHint: true
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
@@ -149,8 +152,8 @@ class UpdateContentTool extends Tool
         $propertyType = $nodeType->getPropertyType($propertyName);
 
         if ($propertyType === "string" && \is_string($propertyValue)) {
-            $propertyValue = str_replace("\\\"", "\"", $propertyValue);
-            $propertyValue = str_replace("<\/p>", "</p>", $propertyValue);
+            $propertyValue = \str_replace("\\\"", "\"", $propertyValue);
+            $propertyValue = \str_replace("<\/p>", "</p>", $propertyValue);
         }
 
         // Handle DateTime / DateTimeImmutable properties: accept ISO 8601 strings
@@ -158,7 +161,7 @@ class UpdateContentTool extends Tool
             return new \DateTimeImmutable($propertyValue);
         }
 
-        if (class_exists($propertyType) || interface_exists($propertyType)) {
+        if (\class_exists($propertyType) || interface_exists($propertyType)) {
             if (!\is_array($propertyValue) || !isset($propertyValue["__flow_object_type"]) || !isset($propertyValue["__identifier"])) {
                 throw new \InvalidArgumentException("The property $propertyName is expected to be of type an '$propertyType' entity. So the value is expected to be an object of {__flow_object_type:\"\", __identifier:\"\"}");
             }
@@ -173,7 +176,7 @@ class UpdateContentTool extends Tool
                 throw new \InvalidArgumentException("__flow_object_type must be a string");
             }
 
-            if (!class_exists($flowObjectType) && !interface_exists($flowObjectType)) {
+            if (!\class_exists($flowObjectType) && !interface_exists($flowObjectType)) {
                 throw new \InvalidArgumentException("__flow_object_type must be an existing FQCN");
 
             }

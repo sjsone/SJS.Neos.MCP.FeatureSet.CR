@@ -20,13 +20,15 @@ use Neos\Neos\Service\UserService;
 use Psr\Log\LoggerInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use Neos\Flow\Annotations as Flow;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\ContentTreeTool\ContentTreeNode;
 
-class ContentTreeTool extends Tool
+class ContentTreeTool extends Tool implements ToolConstructor
 {
     #[Flow\Inject]
     protected WorkspaceService $workspaceService;
@@ -40,7 +42,7 @@ class ContentTreeTool extends Tool
     #[Flow\Inject]
     protected LoggerInterface $logger;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'content_tree',
@@ -67,7 +69,8 @@ class ContentTreeTool extends Tool
             annotations: new Annotations(
                 title: 'Content Tree',
                 readOnlyHint: true
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
@@ -133,7 +136,7 @@ class ContentTreeTool extends Tool
         $nodeName = $subtree->node->name;
         if ($nodeName === null) {
             $aggregateIdStr = (string) $subtree->node->aggregateId;
-            $nodeName = NodeName::fromString('unnamed-' . substr($aggregateIdStr, 0, 8));
+            $nodeName = NodeName::fromString('unnamed-' . \substr($aggregateIdStr, 0, 8));
         }
 
         return new ContentTreeNode(

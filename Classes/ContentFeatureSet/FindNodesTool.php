@@ -22,14 +22,16 @@ use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use Neos\Neos\Service\UserService;
 use Psr\Log\LoggerInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\IntegerSchema;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
-class FindNodesTool extends Tool
+class FindNodesTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 
@@ -39,7 +41,7 @@ class FindNodesTool extends Tool
     #[Flow\Inject]
     protected LoggerInterface $logger;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'find_nodes',
@@ -65,7 +67,8 @@ class FindNodesTool extends Tool
             annotations: new Annotations(
                 title: 'Find Nodes',
                 readOnlyHint: true
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
@@ -117,12 +120,12 @@ class FindNodesTool extends Tool
         } else {
             $rootNodeAggregates = $graph->findRootNodeAggregates(FindRootNodeAggregatesFilter::create());
             foreach ($rootNodeAggregates as $rootNodeAggregate) {
-                if (count($results) >= $limit) {
+                if (\count($results) >= $limit) {
                     break;
                 }
 
                 foreach ($rootNodeAggregate->occupiedDimensionSpacePoints as $originDsp) {
-                    if (count($results) >= $limit) {
+                    if (\count($results) >= $limit) {
                         break;
                     }
 
@@ -150,7 +153,7 @@ class FindNodesTool extends Tool
      */
     private function resolveWorkspaceName(ServerContext $serverContext, array $input): WorkspaceName
     {
-        if (isset($input['workspace']) && is_string($input['workspace'])) {
+        if (isset($input['workspace']) && \is_string($input['workspace'])) {
             return WorkspaceName::fromString($input['workspace']);
         }
 
@@ -181,7 +184,7 @@ class FindNodesTool extends Tool
         int $limit,
         NodeTypeManager $nodeTypeManager
     ): void {
-        if (count($results) >= $limit) {
+        if (\count($results) >= $limit) {
             return;
         }
 
@@ -193,7 +196,7 @@ class FindNodesTool extends Tool
         }
 
         foreach ($subtree->children as $child) {
-            if (count($results) >= $limit) {
+            if (\count($results) >= $limit) {
                 break;
             }
             $this->walkSubtree($child, $results, $nodeTypeName, $searchTerm, $propertyFilters, $limit, $nodeTypeManager);
@@ -226,7 +229,7 @@ class FindNodesTool extends Tool
         // Check propertyFilters (exact match)
         if ($propertyFilters !== null) {
             foreach ($propertyFilters as $key => $value) {
-                if (!is_string($key) || $node->getProperty($key) !== $value) {
+                if (!\is_string($key) || $node->getProperty($key) !== $value) {
                     return null;
                 }
             }
@@ -236,7 +239,7 @@ class FindNodesTool extends Tool
         if ($searchTerm !== null) {
             $lowerSearchTerm = mb_strtolower($searchTerm);
             foreach ($node->properties as $propertyName => $propertyValue) {
-                if (is_string($propertyValue) && str_contains(mb_strtolower($propertyValue), $lowerSearchTerm)) {
+                if (\is_string($propertyValue) && \str_contains(mb_strtolower($propertyValue), $lowerSearchTerm)) {
                     $matchedProperty = $propertyName;
                     break;
                 }

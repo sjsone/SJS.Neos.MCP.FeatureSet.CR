@@ -13,15 +13,17 @@ use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
+use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 use Neos\Flow\Annotations as Flow;
 
 
-class GetNodeTypeTool extends Tool
+class GetNodeTypeTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 
-    public function __construct()
+    public function __construct(FeatureSetInterface $featureSet)
     {
         parent::__construct(
             name: 'get_node_type',
@@ -32,7 +34,8 @@ class GetNodeTypeTool extends Tool
             annotations: new Annotations(
                 title: 'Get Node Type',
                 readOnlyHint: true
-            )
+            ),
+            featureSet: $featureSet
         );
     }
 
