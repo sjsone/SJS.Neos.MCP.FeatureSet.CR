@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace SJS\Neos\MCP\FeatureSet\CR\DocumentFeatureSet;
 
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
-use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
 use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Neos\MCP\FeatureSet\CR\Tool\AbstractAddNodeTool;
 
-class AddDocumentTool extends AbstractAddNodeTool implements ToolConstructor
+class AddDocumentTool extends AbstractAddNodeTool
 {
     protected string $requiredNodeTypeName = "Neos.Neos:Document";
 

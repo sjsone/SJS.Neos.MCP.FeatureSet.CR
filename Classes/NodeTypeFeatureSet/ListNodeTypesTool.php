@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace SJS\Neos\MCP\FeatureSet\CR\NodeTypeFeatureSet;
 
-use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
-use Neos\Flow\Annotations as Flow;
-use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
@@ -14,12 +11,12 @@ use SJS\Flow\MCP\Domain\MCP\Tool\Content;
 use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
 use SJS\Flow\MCP\FeatureSet\FeatureSetInterface;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
+use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
 
 class ListNodeTypesTool extends Tool implements ToolConstructor
 {
-    #[Flow\Inject]
-    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+    use Trait\ContentRepositoryTool;
 
     public function __construct(FeatureSetInterface $featureSet)
     {
@@ -40,9 +37,7 @@ class ListNodeTypesTool extends Tool implements ToolConstructor
      */
     public function run(ServerContext $serverContext, array $input): Content
     {
-        $httpRequest = $serverContext->request->getHttpRequest();
-        $contentRepositoryId = SiteDetectionResult::fromRequest($httpRequest)->contentRepositoryId;
-        $contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        $contentRepository = $this->getContentRepository($serverContext);
 
         $nodeTypes = [];
         foreach ($contentRepository->getNodeTypeManager()->getNodeTypes(true) as $nodeType) {

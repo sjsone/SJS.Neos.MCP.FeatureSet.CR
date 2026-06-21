@@ -30,7 +30,7 @@ class ListDocumentsTool extends Tool implements ToolConstructor
     #[Flow\Inject]
     protected NodeUriBuilderFactory $nodeUriBuilderFactory;
 
-    #[Flow\Inject]
+    #[Flow\Inject(name: "SJS.Flow.MCP:MCPLogger", lazy: false)]
     protected LoggerInterface $logger;
 
     public function __construct(FeatureSetInterface $featureSet)

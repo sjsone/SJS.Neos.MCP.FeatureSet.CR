@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 namespace SJS\Neos\MCP\FeatureSet\CR\DocumentFeatureSet;
 
-use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
-use Neos\ContentRepository\Core\NodeType\NodeTypeName;
-use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
-use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
-use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindRootNodeAggregatesFilter;
-use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Neos\Neos\FrontendRouting\Projection\DocumentUriPathFinder;
+use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Neos\Flow\Annotations as Flow;
 use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
@@ -29,7 +24,7 @@ class ResolveNodePathTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 
-    #[Flow\Inject]
+    #[Flow\Inject(name: "SJS.Flow.MCP:MCPLogger", lazy: false)]
     protected LoggerInterface $logger;
 
     public function __construct(FeatureSetInterface $featureSet)
@@ -59,304 +54,74 @@ class ResolveNodePathTool extends Tool implements ToolConstructor
     public function run(ServerContext $serverContext, array $input): Content
     {
         $rawPath = $input['path'] ?? '';
-        $workspaceName = isset($input['workspace']) && $input['workspace'] !== ''
-            ? WorkspaceName::fromString($input['workspace'])
-            : WorkspaceName::forLive();
 
-        $segments = $this->normalizePathSegments($rawPath);
-
-        $contentRepository = $this->getContentRepository($serverContext);
-        $graph = $contentRepository->getContentGraph($workspaceName);
-
-        // Find all root document node aggregates to discover dimension space points
-        $rootFilter = FindRootNodeAggregatesFilter::create(
-            nodeTypeName: NodeTypeName::fromString('Neos.Neos:Document')
-        );
-        $rootAggregates = $graph->findRootNodeAggregates($rootFilter);
-
-        // Collect unique dimension space points from all root aggregates
-        $dimensionSpacePoints = [];
-        foreach ($rootAggregates as $aggregate) {
-            foreach ($aggregate->occupiedDimensionSpacePoints as $originPoint) {
-                $dsp = $originPoint->toDimensionSpacePoint();
-                $dimensionSpacePoints[$dsp->hash] = $dsp;
-            }
+        // Normalize: strip leading/trailing slashes and .html suffix
+        $uriPath = \trim(\trim($rawPath, '/'));
+        if (\str_ends_with($uriPath, '.html')) {
+            $uriPath = \substr($uriPath, 0, -5);
         }
 
+        $contentRepository = $this->getContentRepository($serverContext);
+
+        $siteDetection = SiteDetectionResult::fromRequest(
+            $serverContext->request->getHttpRequest()
+        );
+
+        $documentUriPathFinder = $contentRepository->projectionState(
+            DocumentUriPathFinder::class
+        );
+
+        // Try exact match against the URI path projection for each dimension space point.
+        // The projection stores URI paths WITHOUT the dimension prefix (e.g. "features"
+        // not "en/features"). The dimension prefix is handled by the dimension resolver.
+        // O(number of DSPs) — typically 2-5 — instead of O(all documents).
+        $variationGraph = $contentRepository->getVariationGraph();
         $matches = [];
 
-        foreach ($dimensionSpacePoints as $spacePoint) {
-            $subgraph = $graph->getSubgraph(
-                $spacePoint,
-                VisibilityConstraints::default()
-            );
+        foreach ($variationGraph->getDimensionSpacePoints() as $point) {
+            // Derive the dimension URI prefix for this DSP (e.g. "en" for en_US, "de" for de)
+            $dimensionSegments = [];
+            foreach ($point->coordinates as $coordValue) {
+                $dimensionSegments[] = \explode('_', $coordValue, 2)[0];
+            }
+            $dimensionPrefix = \implode('/', $dimensionSegments);
 
-            // Find the root document node in this subgraph via coverage check
-            $rootNode = $this->findRootNodeInSubgraph($rootAggregates, $subgraph, $spacePoint);
+            // Strip the dimension prefix from the URI path if present
+            $uriPathWithoutDimension = $uriPath;
+            if ($dimensionPrefix !== '' && \str_starts_with($uriPath, $dimensionPrefix . '/')) {
+                $uriPathWithoutDimension = \substr($uriPath, \strlen($dimensionPrefix) + 1);
+            } elseif ($uriPath === $dimensionPrefix) {
+                $uriPathWithoutDimension = '';
+            }
 
-            if ($rootNode === null) {
+            try {
+                $nodeInfo = $documentUriPathFinder->getEnabledBySiteNodeNameUriPathAndDimensionSpacePointHash(
+                    $siteDetection->siteNodeName,
+                    $uriPathWithoutDimension,
+                    $point->hash,
+                );
+            } catch (\Neos\Neos\FrontendRouting\Exception\NodeNotFoundException) {
                 continue;
             }
 
-            $result = $this->resolvePathInSubgraph($subgraph, $rootNode, $segments);
-
-            if ($result !== null) {
-                $matches[] = $result;
-            }
+            $matches[] = [
+                'nodeAddress' => NodeAddress::create(
+                    $contentRepository->id,
+                    WorkspaceName::forLive(),
+                    $point,
+                    $nodeInfo->getNodeAggregateId(),
+                )->jsonSerialize(),
+                'nodeTypeName' => $nodeInfo->getNodeTypeName()->value,
+                'uriPath' => $nodeInfo->getUriPath(),
+                'dimensions' => $point->coordinates,
+                'matchType' => 'exact',
+            ];
         }
 
         if (empty($matches)) {
             return Content::text("No document found for path: {$input['path']}");
         }
 
-        return Content::structuredWithFallback($matches);
-    }
-
-    /**
-     * Normalize a URL path into segments.
-     *
-     * Examples:
-     *   '/en/about/team' -> ['en', 'about', 'team']
-     *   '/about.html'    -> ['about']
-     *   '/'              -> []
-     *
-     * @return array<string>
-     */
-    private function normalizePathSegments(string $path): array
-    {
-        $path = \ltrim($path, '/');
-
-        if (\str_ends_with($path, '.html')) {
-            $path = \substr($path, 0, -5);
-        }
-
-        $segments = \array_filter(
-            \explode('/', $path),
-            fn(string $s): bool => $s !== ''
-        );
-
-        return \array_values($segments);
-    }
-
-    /**
-     * Find the root document node from the root aggregates that exists
-     * in the given subgraph dimension space point.
-     */
-    private function findRootNodeInSubgraph(
-        iterable $rootAggregates,
-        ContentSubgraphInterface $subgraph,
-        DimensionSpacePoint $spacePoint
-    ): ?Node {
-        foreach ($rootAggregates as $aggregate) {
-            if (!$aggregate->coversDimensionSpacePoint($spacePoint)) {
-                continue;
-            }
-
-            $originPoint = $aggregate->getOccupationByCovered($spacePoint);
-            try {
-                $node = $aggregate->getNodeByOccupiedDimensionSpacePoint($originPoint);
-                $accessibleNode = $subgraph->findNodeById($node->aggregateId);
-                if ($accessibleNode !== null) {
-                    return $accessibleNode;
-                }
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                    \sprintf(
-                        'Could not access root document node for dimension %s: %s',
-                        $spacePoint->hash,
-                        $e->getMessage()
-                    )
-                );
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Resolve path segments in a specific dimension's subgraph.
-     *
-     * Tries two matching strategies:
-     * 1. Root node's uriPathSegment matches the first segment (standard case)
-     * 2. Root node's segment is skipped; children are matched against the first segment
-     *
-     * @param array<string> $segments
-     * @return array<string, mixed>|null
-     */
-    private function resolvePathInSubgraph(
-        ContentSubgraphInterface $subgraph,
-        Node $rootNode,
-        array $segments
-    ): ?array {
-        if (empty($segments)) {
-            return $this->buildNodeResult($subgraph, $rootNode, 'exact');
-        }
-
-        // Strategy 1: root's uriPathSegment is the first segment
-        $result = $this->matchSegments($subgraph, $rootNode, $segments, 0);
-        if ($result !== null) {
-            return $this->buildNodeResult($subgraph, $result['node'], $result['matchType']);
-        }
-
-        // Strategy 2: skip root's segment and try children directly
-        $result = $this->matchChildren($subgraph, $rootNode, $segments, 0);
-        if ($result !== null) {
-            return $this->buildNodeResult($subgraph, $result['node'], $result['matchType']);
-        }
-
-        return null;
-    }
-
-    /**
-     * Try to match the current node's uriPathSegment against the segment
-     * at the given offset. If matched and more segments remain, recurses
-     * into children. Returns the deepest match (exact or partial).
-     *
-     * @param array<string> $segments
-     * @return array<string, mixed>|null
-     */
-    private function matchSegments(
-        ContentSubgraphInterface $subgraph,
-        Node $node,
-        array $segments,
-        int $offset
-    ): ?array {
-        if ($offset >= \count($segments)) {
-            return null;
-        }
-
-        $uriPathSegment = $node->getProperty('uriPathSegment');
-
-        if (!\is_string($uriPathSegment) || $uriPathSegment !== $segments[$offset]) {
-            return null;
-        }
-
-        $newOffset = $offset + 1;
-
-        if ($newOffset >= \count($segments)) {
-            // All segments consumed — exact match at this node
-            return [
-                'node' => $node,
-                'matchType' => 'exact',
-                'matchedCount' => $newOffset,
-            ];
-        }
-
-        // More segments remain — try matching through children
-        $childResult = $this->matchChildren($subgraph, $node, $segments, $newOffset);
-
-        if ($childResult !== null) {
-            return $childResult;
-        }
-
-        // No child could match the remaining segment(s)
-        // Return this node as the deepest partial match
-        return [
-            'node' => $node,
-            'matchType' => 'partial',
-            'matchedCount' => $newOffset,
-        ];
-    }
-
-    /**
-     * Try to match remaining segments against children of the given parent node.
-     *
-     * @param array<string> $segments
-     * @return array<string, mixed>|null
-     */
-    private function matchChildren(
-        ContentSubgraphInterface $subgraph,
-        Node $parent,
-        array $segments,
-        int $offset
-    ): ?array {
-        $children = $subgraph->findChildNodes(
-            $parent->aggregateId,
-            FindChildNodesFilter::create()
-        );
-
-        $bestPartial = null;
-
-        foreach ($children as $child) {
-            $result = $this->matchSegments($subgraph, $child, $segments, $offset);
-
-            if ($result === null) {
-                continue;
-            }
-
-            if ($result['matchType'] === 'exact') {
-                return $result;
-            }
-
-            if (
-                $bestPartial === null
-                || $result['matchedCount'] > $bestPartial['matchedCount']
-            ) {
-                $bestPartial = $result;
-            }
-        }
-
-        return $bestPartial;
-    }
-
-    /**
-     * Build the result array for a matched node.
-     *
-     * @return array<string, mixed>
-     */
-    private function buildNodeResult(
-        ContentSubgraphInterface $subgraph,
-        Node $node,
-        string $matchType
-    ): array {
-        $nodeAddress = NodeAddress::fromNode($node);
-
-        return [
-            'nodeAddress' => $nodeAddress,
-            'nodeTypeName' => $node->nodeTypeName->value,
-            'name' => $node->name?->value ?? '',
-            'title' => $node->getProperty('title') ?? '',
-            'uriPathSegment' => $node->getProperty('uriPathSegment') ?? '',
-            'urlPath' => $this->buildUrlPath($subgraph, $node),
-            'dimensions' => $node->dimensionSpacePoint->coordinates,
-            'matchType' => $matchType,
-            'workspaceName' => $node->workspaceName->value,
-        ];
-    }
-
-    /**
-     * Build the full URL path for a node by walking up the parent hierarchy
-     * and collecting uriPathSegment values.
-     */
-    private function buildUrlPath(
-        ContentSubgraphInterface $subgraph,
-        Node $node
-    ): string {
-        $segments = [];
-        $currentId = $node->aggregateId;
-
-        while (true) {
-            $currentNode = $subgraph->findNodeById($currentId);
-            if ($currentNode === null) {
-                break;
-            }
-
-            $segment = $currentNode->getProperty('uriPathSegment');
-            if (\is_string($segment) && $segment !== '') {
-                array_unshift($segments, $segment);
-            }
-
-            $parent = $subgraph->findParentNode($currentId);
-            if ($parent === null) {
-                break;
-            }
-            $currentId = $parent->aggregateId;
-        }
-
-        if (empty($segments)) {
-            return '/';
-        }
-
-        return '/' . \implode('/', $segments);
+        return Content::structuredWithFallback(['matches' => $matches]);
     }
 }

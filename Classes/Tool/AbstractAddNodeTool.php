@@ -16,12 +16,13 @@ use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\Tool\Content;
+use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
 use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Neos\MCP\FeatureSet\CR\Trait;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 
 
-abstract class AbstractAddNodeTool extends Tool
+abstract class AbstractAddNodeTool extends Tool implements ToolConstructor
 {
     use Trait\ContentRepositoryTool;
 

@@ -38,7 +38,7 @@ class FindNodesTool extends Tool implements ToolConstructor
     #[Flow\Inject]
     protected UserService $userService;
 
-    #[Flow\Inject]
+    #[Flow\Inject(name: "SJS.Flow.MCP:MCPLogger", lazy: false)]
     protected LoggerInterface $logger;
 
     public function __construct(FeatureSetInterface $featureSet)
@@ -94,12 +94,11 @@ class FindNodesTool extends Tool implements ToolConstructor
 
         $graph = $contentRepository->getContentGraph($workspaceName);
 
-        $subtreeFilter = null;
-        if ($nodeTypeName !== null) {
-            $subtreeFilter = FindSubtreeFilter::create(nodeTypes: NodeTypeCriteria::createWithAllowedNodeTypeNames(
+        $subtreeFilter = $nodeTypeName !== null
+            ? FindSubtreeFilter::create(nodeTypes: NodeTypeCriteria::createWithAllowedNodeTypeNames(
                 NodeTypeNames::with($nodeTypeName)
-            ));
-        }
+            ))
+            : FindSubtreeFilter::create();
 
         $results = [];
 
@@ -145,7 +144,7 @@ class FindNodesTool extends Tool implements ToolConstructor
             }
         }
 
-        return Content::structuredWithFallback($results);
+        return Content::structuredWithFallback(['items' => $results]);
     }
 
     /**

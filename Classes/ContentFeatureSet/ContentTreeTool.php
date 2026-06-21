@@ -12,12 +12,9 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\Subtree;
 use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
-use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
-use Neos\Neos\Domain\Service\WorkspaceService;
-use SJS\Flow\MCP\Domain\Connection\ServerContext;
-use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Neos\Neos\Service\UserService;
 use Psr\Log\LoggerInterface;
+use SJS\Flow\MCP\Domain\Connection\ServerContext;
 use SJS\Flow\MCP\Domain\MCP\Tool;
 use SJS\Flow\MCP\Domain\MCP\Tool\Annotations;
 use SJS\Flow\MCP\Domain\MCP\ToolConstructor;
@@ -27,19 +24,16 @@ use SJS\Flow\MCP\JsonSchema\ObjectSchema;
 use SJS\Flow\MCP\JsonSchema\StringSchema;
 use Neos\Flow\Annotations as Flow;
 use SJS\Neos\MCP\FeatureSet\CR\ContentFeatureSet\ContentTreeTool\ContentTreeNode;
+use SJS\Neos\MCP\FeatureSet\CR\Trait;
 
 class ContentTreeTool extends Tool implements ToolConstructor
 {
-    #[Flow\Inject]
-    protected WorkspaceService $workspaceService;
-
-    #[Flow\Inject]
-    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+    use Trait\ContentRepositoryTool;
 
     #[Flow\Inject]
     protected UserService $userService;
 
-    #[Flow\Inject]
+    #[Flow\Inject(name: "SJS.Flow.MCP:MCPLogger", lazy: false)]
     protected LoggerInterface $logger;
 
     public function __construct(FeatureSetInterface $featureSet)
@@ -57,14 +51,6 @@ class ContentTreeTool extends Tool implements ToolConstructor
                         "aggregateId" => (new StringSchema())->required()
                     ]
                 ))->required(),
-                // "node_type_filter" => new ArraySchema(
-                //     description: "List of the NodeTypes to filter",
-                //     items: new StringSchema(),
-                //     default: [
-                //         'Neos.Neos:ContentCollection',
-                //         'Neos.Neos:Content'
-                //     ]
-                // )
             ]),
             annotations: new Annotations(
                 title: 'Content Tree',
@@ -80,26 +66,27 @@ class ContentTreeTool extends Tool implements ToolConstructor
     public function run(ServerContext $serverContext, array $input): Content
     {
         $nodeAddressArray = $input["node_address"];
-
         $nodeTypeFilter = $input["node_type_filter"] ?? null;
-
 
         $nodeAddress = NodeAddress::fromArray($nodeAddressArray);
 
-        $httpRequest = $serverContext->request->getHttpRequest();
-        $contentRepositoryId = SiteDetectionResult::fromRequest(request: $httpRequest)->contentRepositoryId;
-        $contentRepository = $this->contentRepositoryRegistry->get(contentRepositoryId: $contentRepositoryId);
+        $contentRepository = $this->getContentRepository($serverContext);
 
         $user = $this->userService->getBackendUser();
         if ($user === null) {
             throw new \InvalidArgumentException("Could not get backend user");
         }
 
-        $userWorkspace = $this->workspaceService->getPersonalWorkspaceForUser(contentRepositoryId: $contentRepositoryId, userId: $user->getId());
+        $userWorkspace = $this->workspaceService->getPersonalWorkspaceForUser(
+            contentRepositoryId: $nodeAddress->contentRepositoryId,
+            userId: $user->getId()
+        );
 
         $graph = $contentRepository->getContentGraph(workspaceName: $userWorkspace->workspaceName);
-        $subGraph = $graph->getSubgraph(dimensionSpacePoint: $nodeAddress->dimensionSpacePoint, visibilityConstraints: VisibilityConstraints::default());
-
+        $subGraph = $graph->getSubgraph(
+            dimensionSpacePoint: $nodeAddress->dimensionSpacePoint,
+            visibilityConstraints: VisibilityConstraints::default()
+        );
 
         $subtreeFilter = FindSubtreeFilter::create(nodeTypes: NodeTypeCriteria::createWithAllowedNodeTypeNames(
             nodeTypeNames: NodeTypeNames::fromArray([
@@ -108,13 +95,15 @@ class ContentTreeTool extends Tool implements ToolConstructor
             ])
         ));
 
-        $subtree = $subGraph->findSubtree(entryNodeAggregateId: $nodeAddress->aggregateId, filter: $subtreeFilter);
+        $subtree = $subGraph->findSubtree(
+            entryNodeAggregateId: $nodeAddress->aggregateId,
+            filter: $subtreeFilter
+        );
         if ($subtree === null) {
             throw new \InvalidArgumentException("Could not find subtree using aggregateId in nodeAddress");
         }
 
         $subtreeForJson = $this->subtreeToJson($subtree, $nodeTypeFilter);
-
 
         return Content::structuredWithFallback($subtreeForJson->toArray());
     }
@@ -149,6 +138,5 @@ class ContentTreeTool extends Tool implements ToolConstructor
             iterator_to_array($subtree->node->properties->getIterator()),
             $children,
         );
-
     }
 }

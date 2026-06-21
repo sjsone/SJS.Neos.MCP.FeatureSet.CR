@@ -95,7 +95,10 @@ class UpdateContentTool extends Tool implements ToolConstructor
 
         $contentRepository->handle($command);
 
-        return Content::text("Property updated");
+        return Content::structuredWithFallback([
+            'status' => 'success',
+            'message' => 'Property updated',
+        ]);
     }
 
     /**
@@ -115,11 +118,7 @@ class UpdateContentTool extends Tool implements ToolConstructor
      */
     protected function retrievePropertyValue(array $input): mixed
     {
-        $propertyValue = $input["property_value"];
-        if (!\is_string($propertyValue)) {
-            throw new \InvalidArgumentException("property_value must be string");
-        }
-        return $propertyValue;
+        return $input["property_value"];
     }
 
     protected function validateNode(?Node $node, ContentRepository $contentRepository, string $propertyName): void
